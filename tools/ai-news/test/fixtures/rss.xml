@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0">
+  <channel>
+    <title>Example AI News</title>
+    <item>
+      <title><![CDATA[OpenAI &amp; NVIDIA announce partnership]]></title>
+      <link>https://example.com/posts/openai-nvidia?utm_source=rss&amp;utm_medium=feed</link>
+      <pubDate>__RECENT__</pubDate>
+      <description>&lt;p&gt;OpenAI and NVIDIA said the &lt;b&gt;deal&lt;/b&gt; covers GPU supply for data center buildout.&lt;/p&gt;</description>
+      <guid isPermaLink="false">post-1</guid>
+    </item>
+    <item>
+      <title>Old article that should be filtered out</title>
+      <link>https://example.com/posts/old</link>
+      <pubDate>Mon, 01 Jan 2024 00:00:00 GMT</pubDate>
+      <description>Ancient news.</description>
+    </item>
+    <item>
+      <title>Sponsored: buy our course</title>
+      <link>https://example.com/posts/ad</link>
+      <pubDate>__RECENT__</pubDate>
+      <description>PR記事です。</description>
+    </item>
+  </channel>
+</rss>

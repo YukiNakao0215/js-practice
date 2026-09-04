@@ -1,0 +1,18 @@
+{
+  "name": "ai-news-obsidian",
+  "version": "1.0.0",
+  "description": "AIニュースを毎日集約してObsidian vaultにMarkdownノートとして書き出すCLI（外部依存なし）",
+  "type": "module",
+  "private": true,
+  "bin": {
+    "ai-news": "bin/ai-news.js"
+  },
+  "engines": {
+    "node": ">=18.17"
+  },
+  "scripts": {
+    "start": "node bin/ai-news.js",
+    "check": "node bin/ai-news.js check",
+    "test": "node --test test/*.test.js"
+  }
+}
