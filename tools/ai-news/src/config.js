@@ -26,7 +26,12 @@ function readJson(filePath) {
   try {
     return JSON.parse(raw);
   } catch (error) {
-    throw new Error(`設定ファイルのJSONが不正です: ${filePath}\n  ${error.message}`);
+    // Windowsパスを "C:\obsidian\vault" と書くのが最頻出の原因なので先回りして案内する
+    const hint = /\\[^"\\/bfnrtu]/.test(raw)
+      ? '\n  ヒント: JSONでは \\ を2つ重ねる必要があります。'
+        + '"C:\\\\obsidian\\\\vault" と書くか、スラッシュ区切りの "C:/obsidian/vault" を使ってください。'
+      : '';
+    throw new Error(`設定ファイルのJSONが不正です: ${filePath}\n  ${error.message}${hint}`);
   }
 }
 

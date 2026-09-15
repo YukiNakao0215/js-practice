@@ -38,6 +38,53 @@ node bin/ai-news.js --dry-run
 node bin/ai-news.js
 ```
 
+## Windows でのセットアップ（出力先 `C:\obsidian\vault\03_AIニュース`）
+
+この構成用の設定を `config.windows.example.json` として同梱しています。
+
+```powershell
+# 1. リポジトリを置いた場所へ移動
+cd C:\path\to\js-practice\tools\ai-news
+
+# 2. 設定をコピー（中身はそのままで C:/obsidian/vault/03_AIニュース に出力されます）
+copy config.windows.example.json ai-news.config.json
+
+# 3. フィードの疎通確認
+node bin\ai-news.js check
+
+# 4. 書き込まずに内容だけ確認
+node bin\ai-news.js --dry-run
+
+# 5. 本番実行 → C:\obsidian\vault\03_AIニュース\2026-09-15 AIニュース.md が作られる
+node bin\ai-news.js
+```
+
+設定の中身:
+
+```json
+{
+  "vaultPath": "C:/obsidian/vault",
+  "notePath": "03_AIニュース/{{date}} AIニュース.md"
+}
+```
+
+> **パスは `/` 区切りで書いてください。** JSONでは `\` がエスケープ文字なので、`"C:\obsidian\vault"` と書くとJSONの構文エラーになります
+> （どうしても `\` を使うなら `"C:\\obsidian\\vault"` と2つ重ねる）。Windows版Nodeは `/` 区切りをそのまま解釈します。
+
+### 毎日自動実行（タスクスケジューラ）
+
+同梱の `run-ai-news.cmd` を登録するだけです。コンソールをUTF-8に切り替えてから実行し、ログを `ai-news.log` に残します。
+
+```powershell
+# 毎朝7:00に実行するタスクを作成
+schtasks /create /tn "AIニュース日次まとめ" /tr "C:\path\to\js-practice\tools\ai-news\run-ai-news.cmd" /sc daily /st 07:00
+```
+
+GUIで登録する場合は「基本タスクの作成」→ 毎日 → プログラムに `run-ai-news.cmd` のフルパスを指定してください。
+
+> PCがスリープ・シャットダウンしている時刻には実行されません。タスクのプロパティで
+> 「スケジュールされた時刻にタスクを開始できなかった場合、すぐにタスクを開始する」を有効にしておくと取りこぼしが減ります。
+
 ## コマンドとオプション
 
 ```

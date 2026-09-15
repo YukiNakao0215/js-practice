@@ -45,7 +45,15 @@ export function updateState(state, articles, dateString, retentionDays) {
 /** 書き込み途中で落ちても状態を壊さないよう、一時ファイル経由で置き換える */
 export function saveState(statePath, state) {
   fs.mkdirSync(path.dirname(statePath), { recursive: true });
+  const payload = `${JSON.stringify({ version: 1, ...state }, null, 2)}\n`;
   const tempPath = `${statePath}.tmp`;
-  fs.writeFileSync(tempPath, `${JSON.stringify({ version: 1, ...state }, null, 2)}\n`, 'utf8');
-  fs.renameSync(tempPath, statePath);
+  fs.writeFileSync(tempPath, payload, 'utf8');
+  try {
+    fs.renameSync(tempPath, statePath);
+  } catch {
+    // Windowsでは同期ソフトやウイルス対策がファイルを掴んでrenameが失敗することがある。
+    // 記録を失うほうが害が大きいので直接書き込みに切り替える。
+    fs.writeFileSync(statePath, payload, 'utf8');
+    try { fs.unlinkSync(tempPath); } catch { /* 消せなくても実害なし */ }
+  }
 }

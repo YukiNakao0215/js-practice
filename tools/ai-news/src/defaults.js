@@ -73,6 +73,7 @@ export const DEFAULT_CONFIG = {
     { name: 'Alibaba', tag: 'ai/alibaba', aliases: ['Qwen', 'Alibaba Cloud'] },
     { name: 'Perplexity', tag: 'ai/perplexity', aliases: ['Perplexity'] },
     { name: 'Cursor', tag: 'ai/cursor', aliases: ['Cursor'] },
+    { name: 'Cloudflare', tag: 'ai/cloudflare', aliases: ['Cloudflare'] },
   ],
 
   // トピック。タグのみ付与する（固有名詞ではないので wikilink にはしない）
@@ -84,5 +85,6 @@ export const DEFAULT_CONFIG = {
     { name: '研究・論文', tag: 'ai/research', aliases: ['arXiv', 'benchmark', 'paper', 'research', '論文', 'ベンチマーク'] },
     { name: 'オープンソース', tag: 'ai/oss', aliases: ['open source', 'open-source', 'open weights', 'オープンソース'] },
     { name: 'セキュリティ', tag: 'ai/security', aliases: ['prompt injection', 'jailbreak', 'vulnerability', '脆弱性', 'セキュリティ'] },
+    { name: 'ロボティクス', tag: 'ai/robotics', aliases: ['humanoid', 'robotics', 'robot', 'ヒューマノイド', 'ロボット'] },
   ],
 };
