@@ -1,0 +1,27 @@
+{
+  "vaultPath": "/Users/you/Documents/ObsidianVault",
+  "notePath": "AI News/AI-News-{{date}}.md",
+  "timezone": "Asia/Tokyo",
+  "windowHours": 36,
+  "maxItemsPerFeed": 8,
+  "maxItemsTotal": 40,
+  "summaryMaxChars": 220,
+  "linkPrevDay": true,
+  "excludeKeywords": [],
+  "extraFeeds": [
+    {
+      "name": "自分で追加したいフィード",
+      "url": "https://example.com/feed.xml",
+      "category": "日本語メディア",
+      "lang": "ja",
+      "enabled": false
+    }
+  ],
+  "extraEntities": [
+    {
+      "name": "自社プロダクト名",
+      "tag": "ai/mycompany",
+      "aliases": ["自社プロダクト名", "MyProduct"]
+    }
+  ]
+}
