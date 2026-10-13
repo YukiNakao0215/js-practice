@@ -1,0 +1,584 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>予約争奪戦 オペレーションボード</title>
+<style>
+  :root{
+    --bg:#f7f7f8; --panel:#ffffff; --ink:#16181d; --muted:#6b7280; --line:#e3e5ea;
+    --accent:#1d64f2; --ok:#0f7b4f; --warn:#b45309; --danger:#c02626;
+    --okbg:#e8f5ee; --warnbg:#fdf3e2; --dangerbg:#fdeaea;
+  }
+  :root:not([data-theme="light"]){ }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --bg:#101216; --panel:#171a20; --ink:#e8eaee; --muted:#9aa1ad; --line:#2a2f38;
+      --accent:#5b93ff; --ok:#4ec98a; --warn:#e0a253; --danger:#ff6b6b;
+      --okbg:#16281f; --warnbg:#2a2114; --dangerbg:#2c1717;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#101216; --panel:#171a20; --ink:#e8eaee; --muted:#9aa1ad; --line:#2a2f38;
+    --accent:#5b93ff; --ok:#4ec98a; --warn:#e0a253; --danger:#ff6b6b;
+    --okbg:#16281f; --warnbg:#2a2114; --dangerbg:#2c1717;
+  }
+  *{box-sizing:border-box}
+  body{background:var(--bg); color:var(--ink); font-family:-apple-system,BlinkMacSystemFont,"Hiragino Sans","Noto Sans JP",sans-serif; line-height:1.6; padding:20px 16px 80px; max-width:900px; margin:0 auto;}
+  h1{font-size:20px; margin:0 0 4px;}
+  h2{font-size:15px; margin:0 0 12px; letter-spacing:.02em;}
+  .sub{color:var(--muted); font-size:12.5px; margin:0 0 20px;}
+  .panel{background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:16px; margin-bottom:16px;}
+  .row{display:flex; gap:10px; flex-wrap:wrap; align-items:center;}
+  button{font:inherit; font-size:13px; padding:7px 13px; border-radius:8px; border:1px solid var(--line); background:var(--panel); color:var(--ink); cursor:pointer;}
+  button:hover{border-color:var(--accent); color:var(--accent);}
+  button.primary{background:var(--accent); border-color:var(--accent); color:#fff;}
+  button.primary:hover{opacity:.88; color:#fff;}
+  input[type=datetime-local], input[type=number], input[type=text]{font:inherit; font-size:13px; padding:6px 8px; border:1px solid var(--line); border-radius:7px; background:var(--bg); color:var(--ink);}
+
+  /* ---- countdown ---- */
+  #cdLabel{font-size:13px; color:var(--muted); margin-bottom:2px;}
+  #cdTime{font-variant-numeric:tabular-nums; font-weight:700; font-size:clamp(38px,11vw,72px); line-height:1.05; letter-spacing:-.02em;}
+  #cdTarget{font-size:12.5px; color:var(--muted); margin-top:6px; font-variant-numeric:tabular-nums;}
+  .cd-hot #cdTime{color:var(--danger);}
+  .cd-soon #cdTime{color:var(--warn);}
+  .cd-done #cdTime{color:var(--ok);}
+  #nowClock{font-variant-numeric:tabular-nums; font-size:13px; color:var(--muted);}
+
+  /* ---- sync ---- */
+  .badge{display:inline-block; font-size:11.5px; padding:2px 8px; border-radius:999px; border:1px solid var(--line); color:var(--muted);}
+  .badge.ok{background:var(--okbg); color:var(--ok); border-color:transparent;}
+  .badge.warn{background:var(--warnbg); color:var(--warn); border-color:transparent;}
+  .badge.bad{background:var(--dangerbg); color:var(--danger); border-color:transparent;}
+
+  /* ---- targets ---- */
+  table{width:100%; border-collapse:collapse; font-size:13px;}
+  th,td{text-align:left; padding:7px 6px; border-bottom:1px solid var(--line); vertical-align:middle;}
+  th{font-weight:600; color:var(--muted); font-size:12px;}
+  td.est{color:var(--warn); font-size:11.5px; white-space:nowrap;}
+
+  /* ---- checklist ---- */
+  .grp{margin-bottom:18px;}
+  .grp h3{font-size:13.5px; margin:0 0 8px; padding-bottom:5px; border-bottom:1px solid var(--line);}
+  label.item{display:flex; gap:9px; align-items:flex-start; padding:5px 0; font-size:13.5px; cursor:pointer;}
+  label.item input{margin-top:5px; flex:none; width:15px; height:15px; accent-color:var(--accent);}
+  label.item.done > span.t{color:var(--muted); text-decoration:line-through;}
+  span.why{display:block; color:var(--muted); font-size:12px; text-decoration:none !important;}
+  .bar{height:6px; border-radius:99px; background:var(--line); overflow:hidden; margin:2px 0 14px;}
+  .bar > i{display:block; height:100%; background:var(--ok); width:0; transition:width .2s;}
+  #progText{font-size:12.5px; color:var(--muted);}
+
+  /* ---- runbook ---- */
+  ol.run{padding-left:0; list-style:none; margin:0; counter-reset:s;}
+  ol.run li{counter-increment:s; display:flex; gap:10px; padding:8px 0; border-bottom:1px solid var(--line); font-size:13.5px; align-items:flex-start;}
+  ol.run li::before{content:counter(s); flex:none; width:22px; height:22px; border-radius:50%; background:var(--line); color:var(--ink); font-size:12px; display:grid; place-items:center; font-weight:600; margin-top:1px;}
+  ol.run li.done::before{background:var(--ok); color:#fff;}
+  ol.run li.done .txt{color:var(--muted); text-decoration:line-through;}
+  ol.run .stamp{margin-left:auto; font-size:11.5px; color:var(--muted); font-variant-numeric:tabular-nums; white-space:nowrap; padding-left:8px;}
+  ol.run .txt{flex:1;}
+  .note{font-size:12.5px; color:var(--muted); background:var(--bg); border-left:3px solid var(--line); padding:8px 12px; border-radius:0 6px 6px 0; margin-top:12px;}
+  .note strong{color:var(--warn);}
+  a{color:var(--accent);}
+  .foot{font-size:12px; color:var(--muted); text-align:center; margin-top:24px;}
+</style>
+</head>
+
+<h1>予約争奪戦 オペレーションボード</h1>
+<p class="sub">折りたたみ iPhone 初回予約用。ブラウザで開いたまま待機して使う。状態はこのブラウザにのみ保存される。</p>
+
+<!-- ============ カウントダウン ============ -->
+<div class="panel" id="cdPanel">
+  <div id="cdLabel">目標未設定</div>
+  <div id="cdTime">--:--:--</div>
+  <div id="cdTarget"></div>
+  <div class="row" style="margin-top:14px; justify-content:space-between;">
+    <div id="nowClock">現在 --:--:--</div>
+    <div class="row">
+      <span id="syncBadge" class="badge bad">時刻未同期</span>
+      <button id="btnSync">時刻同期</button>
+      <button id="btnNotify">通知を許可</button>
+      <button id="btnTest">音テスト</button>
+    </div>
+  </div>
+  <div class="row" style="margin-top:10px;">
+    <label style="font-size:12.5px; color:var(--muted);">手動オフセット(ms)
+      <input type="number" id="manualOffset" step="10" style="width:100px" placeholder="0">
+    </label>
+    <button id="btnApplyOffset">適用</button>
+    <span style="font-size:12px; color:var(--muted);">同期が失敗する環境用。正確な時計と見比べて「PCが何ms進んでいるか」を負値で入れる。</span>
+  </div>
+</div>
+
+<!-- ============ 目標時刻 ============ -->
+<div class="panel">
+  <h2>目標時刻</h2>
+  <table>
+    <thead><tr><th style="width:34%">イベント</th><th>日時 (端末のタイムゾーン)</th><th style="width:64px"></th></tr></thead>
+    <tbody id="targetRows"></tbody>
+  </table>
+  <div class="note">
+    <strong>注意：</strong>予約開始・発売日は Apple の公式発表前の<b>推定値</b>です。発表を見たら必ずここを実際の日時に直してください。直さないとカウントダウンは意味を持ちません。
+  </div>
+</div>
+
+<!-- ============ 事前準備チェックリスト ============ -->
+<div class="panel">
+  <h2>事前準備チェックリスト</h2>
+  <div class="bar"><i id="progBar"></i></div>
+  <div id="progText"></div>
+  <div id="checklist" style="margin-top:16px;"></div>
+  <div class="row"><button id="btnResetCheck">チェックを全解除</button></div>
+</div>
+
+<!-- ============ 当日ランブック ============ -->
+<div class="panel">
+  <h2>当日ランブック</h2>
+  <p class="sub" style="margin-bottom:12px;">開始時刻から順に潰す。各行をクリックすると、開始時刻からの経過秒が記録される。</p>
+  <ol class="run" id="runbook"></ol>
+  <div class="row" style="margin-top:12px;">
+    <button id="btnResetRun">記録をリセット</button>
+  </div>
+  <div class="note">
+    リロードは<strong>1回ずつ</strong>。連打・多重タブは bot 判定を招き、締め出される方が損失が大きい。
+  </div>
+</div>
+
+<div class="foot">ローカル保存のみ / 自動購入は行いません</div>
+
+<script>
+"use strict";
+
+/* =========================================================
+   保存
+   ========================================================= */
+const KEY = "appleFoldLaunch.v1";
+const store = loadStore();
+function loadStore(){
+  try { return Object.assign(defaults(), JSON.parse(localStorage.getItem(KEY) || "{}")); }
+  catch(e){ return defaults(); }
+}
+function save(){
+  try { localStorage.setItem(KEY, JSON.stringify(store)); } catch(e){ /* プライベートモード等 */ }
+}
+function defaults(){
+  return {
+    targets: [
+      { id:"event",   name:"Apple Event",  iso:"2026-09-10T02:00", est:false },
+      { id:"preorder",name:"予約開始",      iso:"2026-09-11T21:00", est:true  },
+      { id:"release", name:"発売日",        iso:"2026-09-18T08:00", est:true  }
+    ],
+    checked: {},
+    runDone: {},
+    runStart: null,
+    offset: 0
+  };
+}
+
+/* =========================================================
+   時計 — 端末クロックのズレを offset(ms) で補正する
+   ========================================================= */
+let offset = store.offset || 0;   // 実時刻 = Date.now() + offset
+let syncQuality = null;           // 往復遅延(ms)。null = 未同期
+
+function realNow(){ return Date.now() + offset; }
+
+const TIME_SOURCES = [
+  { url:"https://www.cloudflare.com/cdn-cgi/trace",
+    parse: t => { const m = /^ts=([\d.]+)/m.exec(t); return m ? Math.round(parseFloat(m[1])*1000) : null; } },
+  { url:"https://worldtimeapi.org/api/timezone/Etc/UTC",
+    parse: t => { const j = JSON.parse(t); return j.utc_datetime ? Date.parse(j.utc_datetime) : null; } },
+  { url:"https://timeapi.io/api/Time/current/zone?timeZone=UTC",
+    parse: t => { const j = JSON.parse(t); return j.dateTime ? Date.parse(j.dateTime + "Z") : null; } }
+];
+
+async function syncTime(){
+  setBadge("同期中…", "warn");
+  for (const src of TIME_SOURCES){
+    try {
+      const t0 = Date.now();
+      const res = await fetch(src.url, { cache:"no-store" });
+      const t1 = Date.now();
+      if (!res.ok) continue;
+      const server = src.parse(await res.text());
+      if (!server) continue;
+      const rtt = t1 - t0;
+      // サーバ時刻は往復のほぼ中間で観測されたとみなす
+      offset = Math.round(server + rtt/2 - (t0 + t1)/2);
+      syncQuality = rtt;
+      store.offset = offset; save();
+      document.getElementById("manualOffset").value = offset;
+      setBadge(`同期済 ${offset>=0?"+":""}${offset}ms (RTT ${rtt}ms)`, rtt < 400 ? "ok" : "warn");
+      return true;
+    } catch(e){ /* 次のソースへ */ }
+  }
+  setBadge("同期失敗 — 手動オフセットを使用", "bad");
+  return false;
+}
+
+function setBadge(text, kind){
+  const el = document.getElementById("syncBadge");
+  el.textContent = text;
+  el.className = "badge " + kind;
+}
+
+/* =========================================================
+   目標時刻テーブル
+   ========================================================= */
+function renderTargets(){
+  const tb = document.getElementById("targetRows");
+  tb.innerHTML = "";
+  store.targets.forEach((t, i) => {
+    const tr = document.createElement("tr");
+
+    const td1 = document.createElement("td");
+    td1.textContent = t.name;
+    if (t.est){
+      const s = document.createElement("span");
+      s.className = "est";
+      s.textContent = " 推定";
+      td1.appendChild(s);
+    }
+
+    const td2 = document.createElement("td");
+    const inp = document.createElement("input");
+    inp.type = "datetime-local";
+    inp.step = "1";              // 秒まで指定できるようにする
+    inp.value = t.iso;
+    inp.addEventListener("change", () => {
+      t.iso = inp.value;
+      t.est = false;              // 手で入れた時点で確定値として扱う
+      save(); renderTargets(); tick();
+    });
+    td2.appendChild(inp);
+
+    const td3 = document.createElement("td");
+    const b = document.createElement("button");
+    b.textContent = "狙う";
+    b.addEventListener("click", () => { activeTarget = i; save(); tick(); });
+    td3.appendChild(b);
+
+    tr.append(td1, td2, td3);
+    tb.appendChild(tr);
+  });
+}
+
+let activeTarget = null;
+
+function targetMs(t){
+  // datetime-local は端末のタイムゾーンで解釈される
+  const ms = new Date(t.iso).getTime();
+  return isNaN(ms) ? null : ms;
+}
+
+function pickTarget(){
+  if (activeTarget != null && store.targets[activeTarget]) return store.targets[activeTarget];
+  const now = realNow();
+  // 未来のうち最も近いもの。全部過去なら最後のもの
+  const future = store.targets
+    .map(t => ({ t, ms: targetMs(t) }))
+    .filter(x => x.ms != null && x.ms > now)
+    .sort((a,b) => a.ms - b.ms);
+  return future.length ? future[0].t : store.targets[store.targets.length-1];
+}
+
+/* =========================================================
+   カウントダウン
+   ========================================================= */
+const fired = new Set();
+const ALERTS = [600, 300, 60, 10, 0];   // 残り秒でアラート
+
+function fmt(ms){
+  const neg = ms < 0;
+  let s = Math.floor(Math.abs(ms)/1000);
+  const d = Math.floor(s/86400); s -= d*86400;
+  const h = Math.floor(s/3600);  s -= h*3600;
+  const m = Math.floor(s/60);    s -= m*60;
+  const p = n => String(n).padStart(2,"0");
+  const core = (d > 0 ? d + "日 " : "") + p(h)+":"+p(m)+":"+p(s);
+  return (neg ? "+" : "") + core;
+}
+
+function tick(){
+  const now = realNow();
+  const t = pickTarget();
+  const ms = t ? targetMs(t) : null;
+
+  document.getElementById("nowClock").textContent =
+    "現在 " + new Date(now).toLocaleTimeString("ja-JP", { hour12:false });
+
+  const panel = document.getElementById("cdPanel");
+  panel.classList.remove("cd-hot","cd-soon","cd-done");
+
+  if (ms == null){
+    document.getElementById("cdLabel").textContent = "目標未設定";
+    document.getElementById("cdTime").textContent = "--:--:--";
+    document.getElementById("cdTarget").textContent = "";
+    return;
+  }
+
+  const left = ms - now;
+  document.getElementById("cdLabel").textContent =
+    t.name + (t.est ? "（推定値・未確定）" : "") + (left >= 0 ? " まで" : " から経過");
+  document.getElementById("cdTime").textContent = fmt(left);
+  document.getElementById("cdTarget").textContent =
+    new Date(ms).toLocaleString("ja-JP", { hour12:false });
+
+  if (left <= 0) panel.classList.add("cd-done");
+  else if (left <= 60_000) panel.classList.add("cd-hot");
+  else if (left <= 600_000) panel.classList.add("cd-soon");
+
+  // アラート（残り時間がしきい値を跨いだ瞬間に1回）
+  const leftSec = left / 1000;
+  for (const a of ALERTS){
+    const k = t.id + ":" + a;
+    if (!fired.has(k) && leftSec <= a && leftSec > a - 2){
+      fired.add(k);
+      alarm(a === 0 ? `${t.name} 開始` : `${t.name} まで ${a >= 60 ? (a/60)+"分" : a+"秒"}`);
+    }
+  }
+  document.title = left > 0 && left < 3600_000
+    ? fmt(left) + " / " + t.name
+    : "予約争奪戦 オペレーションボード";
+}
+
+/* =========================================================
+   アラート — 通知が使えない環境でも音と画面で気づけるようにする
+   ========================================================= */
+let audioCtx = null;
+function beep(times){
+  try {
+    audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
+    if (audioCtx.state === "suspended") audioCtx.resume();
+    for (let i = 0; i < times; i++){
+      const t0 = audioCtx.currentTime + i * 0.28;
+      const osc = audioCtx.createOscillator();
+      const g = audioCtx.createGain();
+      osc.type = "sine";
+      osc.frequency.value = 880;
+      g.gain.setValueAtTime(0.0001, t0);
+      g.gain.exponentialRampToValueAtTime(0.35, t0 + 0.01);
+      g.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.22);
+      osc.connect(g).connect(audioCtx.destination);
+      osc.start(t0); osc.stop(t0 + 0.25);
+    }
+  } catch(e){ /* 音は出せない環境 */ }
+}
+
+function alarm(msg){
+  beep(3);
+  try {
+    if (window.Notification && Notification.permission === "granted"){
+      new Notification("予約争奪戦", { body: msg });
+    }
+  } catch(e){ /* file:// では通知が塞がれることがある */ }
+  flash(msg);
+}
+
+function flash(msg){
+  const d = document.createElement("div");
+  d.textContent = msg;
+  d.style.cssText = "position:fixed;inset:0;display:grid;place-items:center;background:rgba(192,38,38,.93);color:#fff;font-size:clamp(24px,7vw,52px);font-weight:700;z-index:99;text-align:center;padding:24px;cursor:pointer;";
+  d.addEventListener("click", () => d.remove());
+  document.body.appendChild(d);
+  setTimeout(() => d.remove(), 6000);
+}
+
+/* =========================================================
+   事前準備チェックリスト
+   ========================================================= */
+const CHECKLIST = [
+  { g:"決済で落ちないようにする（最頻の失敗点）", items:[
+    ["card-limit","カードの利用可能枠が本体価格を超えているか確認",
+      "40万円級。枠不足での決済失敗は現実に起きる。一時増枠はカード会社の審査に数日かかるので今すぐ申請する。"],
+    ["card-3ds","3Dセキュア（本人認証）の登録とパスワードを確認",
+      "未登録だと決済直前で別画面に飛ばされて時間を失う。"],
+    ["card-reg","Apple Account に支払い方法を事前登録し、有効期限を確認",""],
+    ["applepay","Apple Pay を使える状態にする",
+      "カード番号入力を丸ごと飛ばせる。最速の決済導線。"],
+    ["backup-card","予備のカードをもう1枚登録",
+      "1枚目が弾かれた時に入力し直す余裕はない。"]
+  ]},
+  { g:"アカウントと配送先", items:[
+    ["signin","Apple Account にサインイン済みか確認（PC・スマホ両方）",""],
+    ["2fa","2ファクタ認証を受け取る端末が手元にあるか確認",""],
+    ["address","配送先住所を登録し、実際に注文画面まで進んで弾かれないか確認",
+      "番地の全角半角や建物名でエラーになることがある。当日に直す時間はない。"],
+    ["app","Apple Store アプリを最新版に更新し、通知をONにする",""]
+  ]},
+  { g:"構成を先に決め切る（当日の迷いをゼロにする）", items:[
+    ["spec1","容量・色の第1希望を決める",""],
+    ["spec2","第2・第3希望も決めて紙に書く",
+      "第1希望が売り切れた瞬間に迷うと、その数十秒で第2希望も消える。"],
+    ["carrier","SIMフリー（Apple直販）か、キャリア購入かを決める",
+      "導線が全く別。当日に比較する時間はない。"],
+    ["tradein","下取り（Trade In）を使うか決める",
+      "使うと手順が増えて確実に遅くなる。初回争奪戦では使わない方が速い。後から売る手もある。"],
+    ["carePlus","AppleCare+ を当日付けるか決める",
+      "後日でも加入できる（購入後の猶予期間あり）。速度優先なら当日は付けない選択肢がある。"],
+    ["pickup","配送か店舗受取かを決める",
+      "在庫の枠が別管理。店舗受取の方が早く手に入る場合がある。"]
+  ]},
+  { g:"当日の環境（前日までに）", items:[
+    ["net","回線を2系統確保する（固定回線＋モバイル）",
+      "片方が詰まった時に即座に切り替える。"],
+    ["devices","PCとスマホの2デバイスで待機する",
+      "Webとアプリで別導線。家族がいれば人数分並べるのが最も効く。"],
+    ["ext","購入に使うブラウザの拡張機能をOFFにする",
+      "広告ブロッカーやスクリプト遮断系が決済フレームを壊すことがある。"],
+    ["clean","不要なタブとアプリを閉じる",""],
+    ["charge","全デバイスを充電・電源接続",""],
+    ["clock","このページで時刻同期する",""]
+  ]},
+  { g:"保険（本命が外れた時のため）", items:[
+    ["multi","キャリア・量販店の予約も同時に走らせる体制を作る",
+      "母数を増やすのがボットより効く。家族に1導線ずつ割り当てる。"],
+    ["cancel","各チャネルのキャンセル可否・条件を確認",
+      "複数確保してしまった時に降りられるようにしておく。"],
+    ["afterwards","落選時の次の手を決めておく",
+      "初回分の後も追加供給はある。焦って転売価格で買わないと決めておく。"]
+  ]}
+];
+
+function renderChecklist(){
+  const root = document.getElementById("checklist");
+  root.innerHTML = "";
+  let total = 0, done = 0;
+
+  CHECKLIST.forEach(group => {
+    const div = document.createElement("div");
+    div.className = "grp";
+    const h = document.createElement("h3");
+    h.textContent = group.g;
+    div.appendChild(h);
+
+    group.items.forEach(([id, text, why]) => {
+      total++;
+      const isDone = !!store.checked[id];
+      if (isDone) done++;
+
+      const lab = document.createElement("label");
+      lab.className = "item" + (isDone ? " done" : "");
+
+      const cb = document.createElement("input");
+      cb.type = "checkbox";
+      cb.checked = isDone;
+      cb.addEventListener("change", () => {
+        store.checked[id] = cb.checked;
+        save(); renderChecklist();
+      });
+
+      const span = document.createElement("span");
+      span.className = "t";
+      span.textContent = text;
+      if (why){
+        const w = document.createElement("span");
+        w.className = "why";
+        w.textContent = why;
+        span.appendChild(w);
+      }
+
+      lab.append(cb, span);
+      div.appendChild(lab);
+    });
+    root.appendChild(div);
+  });
+
+  document.getElementById("progBar").style.width = total ? (done/total*100) + "%" : "0";
+  document.getElementById("progText").textContent = `${done} / ${total} 完了`;
+}
+
+/* =========================================================
+   当日ランブック
+   ========================================================= */
+const RUNBOOK = [
+  ["r1","開始15分前：購入に使う端末で製品ページを開き、サインイン状態を確認する"],
+  ["r2","開始5分前：ページを1回だけリロードしてセッション切れを防ぐ"],
+  ["r3","開始5分前：希望構成のメモを目の前に置く（第1〜第3希望）"],
+  ["r4","開始時刻ちょうど：リロード（1回だけ。反応がなければ5秒待ってもう1回）"],
+  ["r5","構成を選択 → 迷わず「バッグに追加」"],
+  ["r6","チェックアウトへ進む（下取り・AppleCare+ は事前の決定どおりに即答）"],
+  ["r7","支払い（Apple Pay があれば最優先で使う）"],
+  ["r8","注文完了 → 注文番号をスクリーンショット"],
+  ["r9","第1希望が取れなかった場合：即座に第2希望へ切り替える（考え直さない）"],
+  ["r10","本命が確保できたら、他チャネルの予約を速やかにキャンセルする"]
+];
+
+function renderRunbook(){
+  const ol = document.getElementById("runbook");
+  ol.innerHTML = "";
+  RUNBOOK.forEach(([id, text]) => {
+    const li = document.createElement("li");
+    const stampMs = store.runDone[id];
+    if (stampMs) li.className = "done";
+
+    const txt = document.createElement("span");
+    txt.className = "txt";
+    txt.textContent = text;
+
+    const stamp = document.createElement("span");
+    stamp.className = "stamp";
+    if (stampMs){
+      const t = pickTarget();
+      const base = t ? targetMs(t) : null;
+      const diff = base == null ? null : stampMs - base;
+      // 目標時刻の前後2時間以内なら相対秒、それ以外は絶対時刻の方が読める
+      stamp.textContent = (diff != null && Math.abs(diff) < 7200_000)
+        ? (diff >= 0 ? "+" : "-") + Math.round(Math.abs(diff)/1000) + "s"
+        : new Date(stampMs).toLocaleTimeString("ja-JP",{hour12:false});
+    }
+
+    li.addEventListener("click", () => {
+      if (store.runDone[id]) delete store.runDone[id];
+      else store.runDone[id] = realNow();
+      save(); renderRunbook();
+    });
+
+    li.append(txt, stamp);
+    ol.appendChild(li);
+  });
+}
+
+/* =========================================================
+   起動
+   ========================================================= */
+document.getElementById("btnSync").addEventListener("click", syncTime);
+
+document.getElementById("btnNotify").addEventListener("click", async () => {
+  if (!window.Notification){ alert("この環境では通知APIが使えません。音と画面表示で代替します。"); return; }
+  const p = await Notification.requestPermission();
+  alert(p === "granted"
+    ? "通知を有効にしました。"
+    : "通知が許可されませんでした。file:// で開いている場合はローカルサーバ経由で開いてください。音と画面表示は動きます。");
+});
+
+document.getElementById("btnTest").addEventListener("click", () => alarm("テスト通知"));
+
+document.getElementById("btnApplyOffset").addEventListener("click", () => {
+  const v = parseInt(document.getElementById("manualOffset").value, 10);
+  if (isNaN(v)) return;
+  offset = v; store.offset = v; save();
+  setBadge(`手動 ${v>=0?"+":""}${v}ms`, "warn");
+  tick();
+});
+
+document.getElementById("btnResetCheck").addEventListener("click", () => {
+  if (!confirm("チェックを全部外します。よろしいですか？")) return;
+  store.checked = {}; save(); renderChecklist();
+});
+
+document.getElementById("btnResetRun").addEventListener("click", () => {
+  if (!confirm("ランブックの記録を消します。よろしいですか？")) return;
+  store.runDone = {}; save(); renderRunbook();
+});
+
+document.getElementById("manualOffset").value = offset;
+if (offset) setBadge(`保存済 ${offset>=0?"+":""}${offset}ms`, "warn");
+
+renderTargets();
+renderChecklist();
+renderRunbook();
+tick();
+setInterval(tick, 200);
+syncTime();
+</script>
+</html>
