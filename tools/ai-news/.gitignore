@@ -1,0 +1,4 @@
+# 個人設定と既出記事の記録（vaultの絶対パスを含むためコミットしない）
+ai-news.config.json
+.ai-news-state.json
+.ai-news-state.json.tmp

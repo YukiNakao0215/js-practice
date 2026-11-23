@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+  <title>日本語AIブログ</title>
+  <entry>
+    <title>OpenAIとNVIDIAが提携を発表</title>
+    <link rel="self" href="https://example.jp/feed"/>
+    <link rel="alternate" type="text/html" href="https://www.example.jp/entry/openai-nvidia/"/>
+    <published>__RECENT__</published>
+    <summary>AIエージェント向けの半導体供給について解説します。</summary>
+    <id>tag:example.jp,2026:1</id>
+  </entry>
+  <entry>
+    <title>Claude の新機能について</title>
+    <link rel="alternate" href="https://www.example.jp/entry/claude/"/>
+    <published>__RECENT__</published>
+    <summary>Anthropic が Claude を更新しました。</summary>
+    <id>tag:example.jp,2026:2</id>
+  </entry>
+</feed>

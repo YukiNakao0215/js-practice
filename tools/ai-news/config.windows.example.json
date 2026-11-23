@@ -1,0 +1,11 @@
+{
+  "vaultPath": "C:/obsidian/vault",
+  "notePath": "03_AIニュース/{{date}} AIニュース.md",
+  "timezone": "Asia/Tokyo",
+  "windowHours": 36,
+  "maxItemsPerFeed": 8,
+  "maxItemsTotal": 40,
+  "summaryMaxChars": 220,
+  "linkPrevDay": true,
+  "excludeKeywords": []
+}
